@@ -3,7 +3,7 @@ import sys
 
 from PyQt5 import uic
 from PyQt5.QtCore import Qt
-from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QDialog
+from PyQt5.QtWidgets import QApplication, QMainWindow, QTableWidgetItem, QDialog, QTableWidget
 
 
 class NumItem(QTableWidgetItem):
@@ -11,7 +11,7 @@ class NumItem(QTableWidgetItem):
         return int(self.text()) < int(other.text())
 
 
-class AddDialogue(QDialog):
+class AddFilmDialogue(QDialog):
     def __init__(self):
         super().__init__()
 
@@ -64,35 +64,35 @@ class Example(QMainWindow):
         self.refresh_table()
 
     def init_signals(self):
-        self.pushButton.clicked.connect(self.open_dialogue)
+        self.add_film_btn.clicked.connect(self.open_add_film_dialogue)
 
     def closeEvent(self, event):
         self.con.close()
 
-    def open_dialogue(self):
-        dialogue = AddDialogue()
+    def open_add_film_dialogue(self):
+        dialogue = AddFilmDialogue()
         dialogue.exec_() and self.refresh_table()
 
     def refresh_table(self):
-        self.tableWidget.clear()
+        self.films_table_widget.clear()
 
         data = self.cur.execute("SELECT films.id, films.title, year, genres.title, duration FROM films INNER JOIN"
                                 " genres ON genres.id = films.genre").fetchall()
 
-        self.tableWidget.setRowCount(len(data))
-        self.tableWidget.setColumnCount(self.count_of_headings)
-        self.tableWidget.setHorizontalHeaderLabels(self.headings)
+        self.films_table_widget.setRowCount(len(data))
+        self.films_table_widget.setColumnCount(self.count_of_headings)
+        self.films_table_widget.setHorizontalHeaderLabels(self.headings)
 
         for idx, element in enumerate(data):
             element = [str(e) for e in element]
 
-            self.tableWidget.setItem(idx, 0, NumItem(element[0]))
-            self.tableWidget.setItem(idx, 1, QTableWidgetItem(element[1]))
-            self.tableWidget.setItem(idx, 2, QTableWidgetItem(element[2]))
-            self.tableWidget.setItem(idx, 3, QTableWidgetItem(element[3]))
-            self.tableWidget.setItem(idx, 4, QTableWidgetItem(element[4]))
+            self.films_table_widget.setItem(idx, 0, NumItem(element[0]))
+            self.films_table_widget.setItem(idx, 1, QTableWidgetItem(element[1]))
+            self.films_table_widget.setItem(idx, 2, QTableWidgetItem(element[2]))
+            self.films_table_widget.setItem(idx, 3, QTableWidgetItem(element[3]))
+            self.films_table_widget.setItem(idx, 4, QTableWidgetItem(element[4]))
 
-        self.tableWidget.sortItems(0, Qt.DescendingOrder)
+        self.films_table_widget.sortItems(0, Qt.DescendingOrder)
 
 
 if __name__ == '__main__':
