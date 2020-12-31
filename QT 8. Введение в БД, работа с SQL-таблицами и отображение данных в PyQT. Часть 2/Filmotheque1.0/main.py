@@ -69,6 +69,36 @@ class Example(QMainWindow):
 
     def init_signals(self):
         self.add_film_btn.clicked.connect(self.open_add_film_dialogue)
+        #self.edit_film_btn.clicked.connect(self.open_edit_film_dialogue)
+        self.remove_film_btn.clicked.connect(self.remove_film)
+
+        #self.add_genre_btn.clicked.connect(self.open_add_genre_dialogue)
+        #self.edit_genre_btn.clicked.connect(self.open_edit_film_dialogue)
+        self.remove_genre_btn.clicked.connect(self.remove_genre)
+
+    def remove_film(self):
+        current_row = self.films_table_widget.currentRow()
+
+        if current_row == -1:
+            return
+
+        film_id = self.films_table_widget.item(current_row, 0).text()
+        self.cur.execute("DELETE FROM films WHERE id = ?", [film_id])
+        self.con.commit()
+
+        self.films_table_widget.removeRow(current_row)
+
+    def remove_genre(self):
+        current_row = self.genres_table_widget.currentRow()
+
+        if current_row == -1:
+            return
+
+        genre_id = self.genres_table_widget.item(current_row, 0).text()
+        self.cur.execute("DELETE FROM genres WHERE id = ?", [genre_id])
+        self.con.commit()
+
+        self.genres_table_widget.removeRow(current_row)
 
     def closeEvent(self, event):
         self.con.close()
