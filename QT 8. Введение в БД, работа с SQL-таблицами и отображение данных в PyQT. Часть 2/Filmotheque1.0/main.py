@@ -21,13 +21,14 @@ class AddUpdateFilmDialogue(QDialog):
         self.con = sqlite3.connect("films_db.sqlite")
         self.cur = self.con.cursor()
 
-        uic.loadUi("add_dialogue.ui", self)
+        uic.loadUi("add_film_dialogue.ui", self)
 
         self.genre_edit.addItems(
             [e[0] for e in self.cur.execute("SELECT title FROM genres").fetchall()]
         )
         if update:
-            self.submit_btn.setText("Обновить")
+            self.setWindowTitle("Обновить фильм")
+            self.submit_btn.setText("Сохранить")
             self.init_fields(self.get_data())
 
         self.init_signals()
@@ -89,6 +90,74 @@ class AddUpdateFilmDialogue(QDialog):
             self.submit_btn.clicked.connect(lambda: self.insert_data(self.get_fields()))
 
 
+class AddUpdateGenreDialogue(QDialog):
+    def __init__(self, update=False, genre_id=None):
+        super().__init__()
+
+        self.genre_id = genre_id
+        self.update = update
+
+        self.con = sqlite3.connect("films_db.sqlite")
+        self.cur = self.con.cursor()
+
+        uic.loadUi("add_genre_dialogue.ui", self)
+
+        if update:
+            self.setWindowTitle("Обновить жанр")
+            self.submit_btn.setText("Сохранить")
+            self.init_fields(self.get_data())
+
+        self.init_signals()
+
+    def init_fields(self, data):
+        self.title_edit.setText(data["title"])
+
+    def get_data(self):
+        data = self.cur.execute("SELECT title FROM genres WHERE id = ?", [self.genre_id]).fetchone()
+        return {"title": data[0]}
+
+    def get_fields(self):
+        row_id = self.cur.execute("select max(id) from genres").fetchone()[0] + 1 if not self.update else self.genre_id
+        return {"id": row_id, "title": self.title_edit.text()}
+
+    def catch_errors(self, fn, data):
+        if not all(data.values()):
+            self.indicator_lbl.setText("Неверно заполнена форма")
+        try:
+            fn(self, data)
+        except sqlite3.Error:
+            self.indicator_lbl.setText("Неверные данные")
+
+    def insert_data(self, data):
+        def insert_fn(self, data):
+            self.cur.execute("INSERT INTO genres(id, title) VALUES(?, ?)", [
+                data["id"], data["title"]
+            ])
+            self.con.commit()
+            self.accept()
+
+        self.catch_errors(
+            insert_fn, data
+        )
+
+    def update_data(self, data):
+        def update_fn(self, data):
+            self.cur.execute("UPDATE genres SET title = ? WHERE id = ?", [
+                data["title"], data["id"]
+            ])
+            self.con.commit()
+            self.accept()
+        self.catch_errors(
+            update_fn, data
+        )
+
+    def init_signals(self):
+        if self.update:
+            self.submit_btn.clicked.connect(lambda: self.update_data(self.get_fields()))
+        else:
+            self.submit_btn.clicked.connect(lambda: self.insert_data(self.get_fields()))
+
+
 class Example(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -114,8 +183,8 @@ class Example(QMainWindow):
         self.edit_film_btn.clicked.connect(self.open_edit_film_dialogue)
         self.remove_film_btn.clicked.connect(self.remove_film)
 
-        #self.add_genre_btn.clicked.connect(self.open_add_genre_dialogue)
-        #self.edit_genre_btn.clicked.connect(self.open_edit_film_dialogue)
+        self.add_genre_btn.clicked.connect(self.open_add_genre_dialogue)
+        self.edit_genre_btn.clicked.connect(self.open_edit_film_dialogue)
         self.remove_genre_btn.clicked.connect(self.remove_genre)
 
     def remove_film(self):
@@ -159,6 +228,20 @@ class Example(QMainWindow):
 
         dialogue = AddUpdateFilmDialogue(update=True, film_id=film_id)
         dialogue.exec_() and self.refresh_films_table()
+
+    def open_add_genre_dialogue(self):
+        dialogue = AddUpdateGenreDialogue()
+        dialogue.exec_() and self.refresh_genres_table()
+
+    def open_edit_film_dialogue(self):
+        current_row = self.genres_table_widget.currentRow()
+
+        if current_row == -1:
+            return
+
+        genre_id = self.genres_table_widget.item(current_row, 0).text()
+        dialogue = AddUpdateGenreDialogue(update=True, genre_id=genre_id)
+        dialogue.exec_() and self.refresh_genres_table()
 
     def refresh_films_table(self):
         self.films_table_widget.clear()
