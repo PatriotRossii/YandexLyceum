@@ -54,14 +54,18 @@ class Example(QMainWindow):
         self.con = sqlite3.connect("films_db.sqlite")
         self.cur = self.con.cursor()
 
-        self.headings = ["ИД", "Название фильма", "Год выпуска", "Жанр", "Продолжительность"]
-        self.count_of_headings = len(self.headings)
+        self.films_headings = ["ИД", "Название фильма", "Год выпуска", "Жанр", "Продолжительность"]
+        self.count_of_films_headings = len(self.films_headings)
+
+        self.genres_headings = ["ИД", "Название жанра"]
+        self.count_of_genres_headings = len(self.genres_headings)
 
         uic.loadUi("UI.ui", self)
 
         self.init_signals()
 
-        self.refresh_table()
+        self.refresh_films_table()
+        self.refresh_genres_table()
 
     def init_signals(self):
         self.add_film_btn.clicked.connect(self.open_add_film_dialogue)
@@ -71,17 +75,17 @@ class Example(QMainWindow):
 
     def open_add_film_dialogue(self):
         dialogue = AddFilmDialogue()
-        dialogue.exec_() and self.refresh_table()
+        dialogue.exec_() and self.refresh_films_table()
 
-    def refresh_table(self):
+    def refresh_films_table(self):
         self.films_table_widget.clear()
 
         data = self.cur.execute("SELECT films.id, films.title, year, genres.title, duration FROM films INNER JOIN"
                                 " genres ON genres.id = films.genre").fetchall()
 
         self.films_table_widget.setRowCount(len(data))
-        self.films_table_widget.setColumnCount(self.count_of_headings)
-        self.films_table_widget.setHorizontalHeaderLabels(self.headings)
+        self.films_table_widget.setColumnCount(self.count_of_films_headings)
+        self.films_table_widget.setHorizontalHeaderLabels(self.films_headings)
 
         for idx, element in enumerate(data):
             element = [str(e) for e in element]
@@ -93,6 +97,21 @@ class Example(QMainWindow):
             self.films_table_widget.setItem(idx, 4, QTableWidgetItem(element[4]))
 
         self.films_table_widget.sortItems(0, Qt.DescendingOrder)
+
+    def refresh_genres_table(self):
+        self.genres_table_widget.clear()
+
+        data = self.cur.execute("SELECT id, title FROM genres").fetchall()
+
+        self.genres_table_widget.setRowCount(len(data))
+        self.genres_table_widget.setColumnCount(self.count_of_genres_headings)
+        self.genres_table_widget.setHorizontalHeaderLabels(self.genres_headings)
+
+        for idx, element in enumerate(data):
+            element = [str(e) for e in element]
+
+            self.genres_table_widget.setItem(idx, 0, NumItem(element[0]))
+            self.genres_table_widget.setItem(idx, 1, QTableWidgetItem(element[1]))
 
 
 if __name__ == '__main__':
